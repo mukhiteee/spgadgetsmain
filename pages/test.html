@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Test - Step by Step</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .info {
+            border-left-color: #17a2b8;
+            background: #d1ecf1;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            background: #1F95B1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 5px;
+        }
+        button:hover {
+            background: #157a8f;
+        }
+        #console-output {
+            background: #2d2d2d;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .console-line {
+            margin: 3px 0;
+        }
+        .console-success { color: #0f0; }
+        .console-error { color: #f00; }
+        .console-info { color: #0ff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 JavaScript Debug Console</h1>
+    <p>This page will test JavaScript step by step. Watch the console below!</p>
+
+    <!-- Test 1: JavaScript Loading -->
+    <div class="test-box info">
+        <h3>Test 1: Is JavaScript Working?</h3>
+        <p id="js-test">❌ JavaScript is NOT working</p>
+    </div>
+
+    <!-- Test 2: Fetch API -->
+    <div class="test-box info">
+        <h3>Test 2: Can We Fetch from API?</h3>
+        <button onclick="testFetchAPI()">Test API Fetch</button>
+        <p id="fetch-result">Click button to test...</p>
+    </div>
+
+    <!-- Test 3: LocalStorage -->
+    <div class="test-box info">
+        <h3>Test 3: LocalStorage Working?</h3>
+        <button onclick="testLocalStorage()">Test LocalStorage</button>
+        <p id="storage-result">Click button to test...</p>
+    </div>
+
+    <!-- Test 4: Add to Cart -->
+    <div class="test-box info">
+        <h3>Test 4: Add to Cart Function</h3>
+        <button onclick="testAddToCart()">Add Test Product</button>
+        <button onclick="showCart()">Show Cart</button>
+        <button onclick="clearCart()">Clear Cart</button>
+        <p id="cart-result">Click button to test...</p>
+    </div>
+
+    <!-- Console Output -->
+    <div class="test-box">
+        <h3>📋 Console Output</h3>
+        <div id="console-output">
+            <div class="console-line console-info">> Waiting for tests...</div>
+        </div>
+    </div>
+
+    <script>
+        // Custom console that shows on page
+        const consoleDiv = document.getElementById('console-output');
+        
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `console-line console-${type}`;
+            line.textContent = `> ${message}`;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            
+            // Also log to browser console
+            console.log(message);
+        }
+
+        // TEST 1: Check if JavaScript is working
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsTest = document.getElementById('js-test');
+            jsTest.textContent = '✅ JavaScript IS working!';
+            jsTest.parentElement.classList.add('success');
+            log('✓ JavaScript loaded successfully!', 'success');
+        });
+
+        // TEST 2: Fetch API
+        async function testFetchAPI() {
+            log('Testing fetch to products_api.php...', 'info');
+            const resultEl = document.getElementById('fetch-result');
+            
+            try {
+                const url = '../api/products_api.php?page=1&per_page=37';
+                log(`Fetching: ${url}`, 'info');
+                
+                const response = await fetch(url);
+                log(`Response status: ${response.status}`, 'info');
+                
+                const data = await response.json();
+                log(`Response received!`, 'success');
+                log(`Success: ${data.success}`, 'info');
+                log(`Products found: ${data.products ? data.products.length : 0}`, 'info');
+                
+                if (data.success && data.products && data.products.length > 0) {
+                    resultEl.textContent = `✅ API works! Found ${data.products.length} products`;
+                    resultEl.parentElement.classList.add('success');
+                    log(`First product: ${data.products[0].name}`, 'success');
+                } else {
+                    resultEl.textContent = '⚠️ API responded but no products found';
+                    log('API returned empty or unsuccessful', 'error');
+                }
+            } catch (error) {
+                resultEl.textContent = '❌ API fetch failed!';
+                resultEl.parentElement.classList.add('error');
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // TEST 3: LocalStorage
+        function testLocalStorage() {
+            log('Testing localStorage...', 'info');
+            const resultEl = document.getElementById('storage-result');
+            
+            try {
+                // Try to write
+                localStorage.setItem('test_key', 'test_value');
+                log('✓ Write to localStorage successful', 'success');
+                
+                // Try to read
+                const value = localStorage.getItem('test_key');
+                log(`✓ Read from localStorage: ${value}`, 'success');
+                
+                // Try to delete
+                localStorage.removeItem('test_key');
+                log('✓ Delete from localStorage successful', 'success');
+                
+                resultEl.textContent = '✅ LocalStorage is working!';
+                resultEl.parentElement.classList.add('success');
+            } catch (error) {
+                resultEl.textContent = '❌ LocalStorage failed!';
+                resultEl.parentElement.classList.add('error');
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // TEST 4: Cart Functions
+        function testAddToCart() {
+            log('Adding test product to cart...', 'info');
+            const resultEl = document.getElementById('cart-result');
+            
+            try {
+                // Get current cart
+                let cart = JSON.parse(localStorage.getItem('sp_cart') || '[]');
+                log(`Current cart has ${cart.length} items`, 'info');
+                
+                // Add a test product
+                const testProduct = {
+                    id: 999,
+                    name: 'Test Product',
+                    brand: 'Test Brand',
+                    price: 1000,
+                    image: 'test.jpg',
+                    stock_quantity: 10,
+                    quantity: 1
+                };
+                
+                cart.push(testProduct);
+                localStorage.setItem('sp_cart', JSON.stringify(cart));
+                log(`✓ Added test product to cart`, 'success');
+                log(`Cart now has ${cart.length} items`, 'success');
+                
+                resultEl.textContent = `✅ Product added! Cart has ${cart.length} items`;
+                resultEl.parentElement.classList.add('success');
+            } catch (error) {
+                resultEl.textContent = '❌ Add to cart failed!';
+                resultEl.parentElement.classList.add('error');
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        function showCart() {
+            log('Showing cart contents...', 'info');
+            
+            try {
+                const cart = JSON.parse(localStorage.getItem('sp_cart') || '[]');
+                log(`Cart has ${cart.length} items`, 'info');
+                
+                if (cart.length === 0) {
+                    log('Cart is empty', 'info');
+                } else {
+                    cart.forEach((item, index) => {
+                        log(`Item ${index + 1}: ${item.name} - ₦${item.price} (Qty: ${item.quantity})`, 'success');
+                    });
+                }
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        function clearCart() {
+            log('Clearing cart...', 'info');
+            
+            try {
+                localStorage.removeItem('sp_cart');
+                log('✓ Cart cleared!', 'success');
+                document.getElementById('cart-result').textContent = 'Cart cleared!';
+            } catch (error) {
+                log(`ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // Log that script is loaded
+        log('Script loaded and ready!', 'success');
+    </script>
+</body>
+</html>

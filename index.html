@@ -1,0 +1,435 @@
+<!Doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SP Gadgets</title>
+  <link rel="icon" href="assets/icon.png">
+  <link rel="stylesheet" href="styles/main.css">
+  <meta name="theme-color" content="#1F95B1">
+
+  <meta name="description" content="Nigeria's trusted source for certified, tested laptops and essential tech gadgets. Enjoy secure, nationwide delivery and a 12-month warranty.">
+  <meta property="og:title" content="SP Gadgets: Certified Laptops & Tech in Nigeria">
+  <meta property="og:description" content="Shop tested laptops, smart watches, and accessories. Get secure, insured delivery to Lagos, Abuja, Port Harcourt, and nationwide.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://spgadgets.netlify.app/">
+  <meta property="og:image" content="https://spgadgets.netlify.app/assets/logo.png">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@yourtwitterhandle">
+  <meta name="twitter:creator" content="@mukhiteee">
+  <meta name="twitter:title" content="SP Gadgets: Certified Laptops & Tech in Nigeria">
+<meta name="twitter:description" content="Shop tested laptops, smart watches, and accessories. Get secure, insured delivery to Lagos, Abuja, Port Harcourt, and nationwide.">
+<meta name="twitter:image" content="https://spgadgets.netlify.app/assets/logo.png">
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <!-- Left: Logo + Brand -->
+      <div class="navbar-brand">
+        <img src="assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+        <div class="navbar-text">
+          <h1 class="navbar-title">SP Gadgets</h1>
+          <p class="navbar-subtitle">Shinkomania Plug</p>
+        </div>
+      </div>
+
+      <!-- Center: Nav Links (Desktop) -->
+      <nav class="navbar-nav" aria-label="Primary navigation">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#products" class="nav-link">Products</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+
+      <!-- Right: Actions -->
+      <div class="navbar-actions">
+        <!-- Cart Icon -->
+        <button class="cart-btn" aria-label="Shopping cart">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          <span class="cart-badge" id="cart-badge" aria-hidden="true">0</span>
+        </button>
+
+        <!-- Shop Now Button -->
+        <a href="pages/shop.php" class="shop-btn">Shop Now</a>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle" aria-label="Menu" aria-expanded="false">
+          <span class="hamburger"></span>
+          <span class="hamburger"></span>
+          <span class="hamburger"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
+    <div class="mobile-overlay-content">
+      <div class="mobile-overlay-header">
+        <div class="navbar-brand">
+          <img src="assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+          <div class="navbar-text">
+            <h2 class="navbar-title">SP Gadgets</h2>
+            <p class="navbar-subtitle">Shinkomania Plug</p>
+          </div>
+        </div>
+        <button class="mobile-overlay-close" id="overlay-close" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#home" class="mobile-nav-link">Home</a>
+        <a href="#products" class="mobile-nav-link">Products</a>
+        <a href="#features" class="mobile-nav-link">Features</a>
+        <a href="#contact" class="mobile-nav-link">Contact</a>
+      </nav>
+
+      <div class="mobile-cta">
+        <button class="shop-btn">Shop Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Section with Slideshow -->
+  <section class="hero" id="home">
+    <div class="hero-slideshow">
+      <div class="slide active" style="background-image: url('assets/slideshow/slide1.jpg')"></div>
+      <div class="slide" style="background-image: url('assets/slideshow/slide2.jpg')"></div>
+      <div class="slide" style="background-image: url('assets/slideshow/slide3.jpg')"></div>
+      <div class="slide" style="background-image: url('assets/slideshow/slide4.jpg')"></div>
+      <div class="slide" style="background-image: url('assets/slideshow/slide5.jpg')"></div>
+      <div class="slide-overlay"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">Innovation in Your Hands</h1>
+        <p class="hero-subtitle">Explore the latest gadgets and tech innovations. Premium quality, unbeatable prices.</p>
+        <div class="hero-cta">
+          <button class="btn btn-primary">Shop Now</button>
+          <button class="btn btn-secondary">Learn More</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slideshow Controls -->
+    <div class="slideshow-controls">
+      <button class="slide-nav prev" id="prev-slide" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <div class="slide-indicators" id="slide-indicators"></div>
+      <button class="slide-nav next" id="next-slide" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+<section class="category-grid-section" id="products">
+    <div class="container">
+        <h2 class="section-title">Shop By Laptop Type</h2>
+        <p class="section-subtitle">Find the perfect machine for your work, study, or play.</p>
+
+        <div class="category-grid">
+            
+            <a href="/category/gaming" class="category-card">
+                <div class="category-image-wrapper">
+                    <img src="assets/product/IMG-20251211-WA0039.jpg" alt="Gaming Laptops" class="category-image">
+                </div>
+                <h3 class="category-title">High-Performance Gaming</h3>
+                <p class="category-count">15+ Models</p>
+                <span class="category-link-btn">Shop Now</span>
+            </a>
+
+            <a href="/category/business" class="category-card">
+                <div class="category-image-wrapper">
+                    <img src="assets/product/IMG-20251211-WA0049.jpg" alt="Business Laptops" class="category-image">
+                </div>
+                <h3 class="category-title">Slim & Portable Business</h3>
+                <p class="category-count">20+ Models</p>
+                <span class="category-link-btn">Shop Now</span>
+            </a>
+
+            <a href="/category/student" class="category-card">
+                <div class="category-image-wrapper">
+                    <img src="assets/product/slide4.jpg" alt="Student Laptops" class="category-image">
+                </div>
+                <h3 class="category-title">Budget-Friendly Student Use</h3>
+                <p class="category-count">10+ Models</p>
+                <span class="category-link-btn">Shop Now</span>
+            </a>
+            
+            <a href="/category/accessories" class="category-card">
+                <div class="category-image-wrapper">
+                    <img src="assets/product/slide1.jpg" alt="Laptop Accessories" class="category-image">
+                </div>
+                <h3 class="category-title">Essential Accessories</h3>
+                <p class="category-count">50+ Items</p>
+                <span class="category-link-btn">Shop Now</span>
+            </a>
+
+        </div>
+    </div>
+</section>
+
+  <section class="featured-products" id="products">
+    <div class="container">
+        <h2 class="section-title">Discover Our Top Gadgets</h2>
+        <p class="section-subtitle">Hand-picked innovations and best-selling tech.</p>
+
+        <div class="product-grid">
+            
+            <div class="product-card">
+                <img src="assets/product/dell-5570-1.jpg" alt="Wireless Noise-Cancelling Earbuds" class="product-image">
+                <h3 class="product-title">Laptop</h3>
+                <p class="product-desc">Dell 5570 Core i5</p>
+                <a href="/category/audio" class="card-link">Explore Laptops →</a>
+            </div>
+
+            <div class="product-card">
+                <img src="assets/product/slide2.jpg" alt="Waterproof Smart Watch" class="product-image">
+                <h3 class="product-title">Smart Wearables</h3>
+                <p class="product-desc">Track fitness and stay connected, effortlessly.</p>
+                <a href="/category/wearables" class="card-link">Shop Watches →</a>
+            </div>
+
+            <div class="product-card">
+                <img src="assets/product/slide3.jpg" alt="4K Ultra-Portable Drone" class="product-image">
+                <h3 class="product-title">Pro Photography</h3>
+                <p class="product-desc">Capture breathtaking visuals from new perspectives.</p>
+                <a href="/category/drones" class="card-link">View Cameras →</a>
+            </div>
+            
+            <div class="product-card">
+                <img src="assets/product/slide5.jpg" alt="20,000mAh Power Bank" class="product-image">
+                <h3 class="product-title">Power & Charging</h3>
+                <p class="product-desc">Never run out of battery with our fastest charging tech.</p>
+                <a href="/category/power" class="card-link">See Accessories →</a>
+            </div>
+
+        </div>
+
+        <div class="view-all-cta">
+            <a href="#products-list" class="btn btn-primary">View All Products</a>
+        </div>
+    </div>
+</section>
+
+<section class="value-props" id="features">
+    <div class="container">
+        <h2 class="section-title">The SP Gadgets Advantage</h2>
+        <p class="section-subtitle">Your trusted source for premium laptops, backed by reliability and service.</p>
+
+        <div class="feature-grid">
+            
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <h3 class="feature-title">Certified & Tested Laptops</h3>
+                <p class="feature-desc">Every single unit undergoes a rigorous 20-point quality check by our certified engineers.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </div>
+                <h3 class="feature-title">Reliable Nationwide Delivery</h3>
+                <p class="feature-desc">Secure, insured shipping to Lagos, Abuja, Port Harcourt, and every state in Nigeria.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                </div>
+                <h3 class="feature-title">12-Month Hardware Warranty</h3>
+                <p class="feature-desc">Confidence in your purchase with a full one-year warranty against all factory defects.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon-wrapper">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feature-icon"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <h3 class="feature-title">Visit Our Kaduna Hub</h3>
+                <p class="feature-desc">Local support, repairs, and pickup options available at our main office in Kaduna.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<section class="testimonials" id="testimonials">
+    <div class="container">
+        <h2 class="section-title">Trusted By Tech Lovers Across Nigeria</h2>
+        <p class="section-subtitle">Hear from our verified customers who received their laptops safely, nationwide.</p>
+
+        <div class="testimonial-grid">
+            
+            <div class="testimonial-card">
+                <p class="quote">"I was skeptical ordering a laptop online, but SP Gadgets delivered to Lagos in just 3 days! The quality is superb. Highly recommend their nationwide service."</p>
+                <div class="customer-info">
+                    <span class="customer-name">Kunle A.</span>
+                    <span class="customer-location">Lagos</span>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <p class="quote">"My new gaming laptop from SP is a beast! Their 24/7 support helped me with the initial setup. Fantastic product and great customer service."</p>
+                <div class="customer-info">
+                    <span class="customer-name">Aisha B.</span>
+                    <span class="customer-location">Abuja</span>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <p class="quote">"Being based in Kaduna, I visited their office. Excellent customer care and they have the latest models. Proud to support a local business with national standards."</p>
+                <div class="customer-info">
+                    <span class="customer-name">Usman D.</span>
+                    <span class="customer-location">Kaduna</span>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="rating-summary">
+            <p>Rated 4.9 / 5.0 based on 500+ verified purchases.</p>
+            <div class="star-rating">
+                ★★★★★
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<section class="newsletter-signup">
+    <div class="container newsletter-flex">
+        <div class="newsletter-content">
+            <h2 class="newsletter-title">Be the First to Know About Deals</h2>
+            <p class="newsletter-subtext">Sign up for our exclusive email list to get early access to new laptop arrivals, special discounts, and tech tips.</p>
+            <ul class="newsletter-benefits">
+                <li><span class="check-icon">✓</span> Exclusive discounts</li>
+                <li><span class="check-icon">✓</span> Latest tech news</li>
+                <li><span class="check-icon">✓</span> Price drop alerts</li>
+            </ul>
+        </div>
+        <div class="newsletter-form-wrapper">
+            <form class="newsletter-form">
+                <input type="email" placeholder="Enter your email address" required aria-label="Email address for newsletter" class="email-input">
+                <button type="submit" class="btn btn-primary newsletter-btn">Subscribe Now</button>
+            </form>
+            <p class="privacy-text">We value your privacy. Unsubscribe at any time.</p>
+        </div>
+    </div>
+</section>
+
+<section class="contact-anchor" id="contact">
+    <div class="container">
+        <div class="contact-grid">
+            
+            <div class="contact-card info-card">
+                <h3 class="contact-title">Get In Touch</h3>
+                <p class="contact-detail">
+                    <span class="detail-icon">📞</span>
+                    Phone Support: <a href="tel:+2348012345678" class="contact-link">+234 801 234 5678</a>
+                </p>
+                <p class="contact-detail">
+                    <span class="detail-icon">📧</span>
+                    Email Sales: <a href="mailto:sales@spgadgets.com" class="contact-link">sales@spgadgets.com</a>
+                </p>
+                <p class="contact-detail">
+                    <span class="detail-icon">💬</span>
+                    WhatsApp: <a href="https://wa.me/2348012345678" target="_blank" class="contact-link">Chat with us</a>
+                </p>
+            </div>
+
+            <div class="contact-card location-card">
+                <h3 class="contact-title">Visit Our Kaduna Hub</h3>
+                <p class="contact-address">
+                    <span class="detail-icon">📍</span>
+                    14 Ahmadu Bello Way, Central Business District, Kaduna, Nigeria.
+                </p>
+                <a href="https://maps.app.goo.gl/YourMapLinkHere" target="_blank" class="btn btn-secondary-contact">
+                    Get Directions
+                </a>
+            </div>
+
+            <div class="contact-card cta-card">
+                <h3 class="contact-title">Ready to Upgrade?</h3>
+                <p class="contact-detail">Explore our full range of certified laptops and accessories.</p>
+                <a href="#products" class="btn btn-primary btn-full-width">
+                    Browse All Products
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<footer class="footer">
+    <div class="container footer-grid">
+        
+        <div class="footer-col brand-col">
+            <div class="navbar-brand footer-brand">
+                <img src="assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+                <h3 class="footer-title">SP Gadgets</h3>
+            </div>
+            <p class="footer-text">Shinkomania Plug: Your reliable partner for certified laptops and nationwide tech delivery in Nigeria.</p>
+            <p class="footer-address">
+                Headquarters: Kaduna, Nigeria
+            </p>
+        </div>
+
+        <div class="footer-col">
+            <h4 class="col-heading">Quick Links</h4>
+            <ul class="footer-links">
+                <li><a href="#home" class="footer-link">Home</a></li>
+                <li><a href="#products" class="footer-link">Laptops & Products</a></li>
+                <li><a href="#features" class="footer-link">Why Buy From Us</a></li>
+                <li><a href="#contact" class="footer-link">Contact & Support</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4 class="col-heading">Information</h4>
+            <ul class="footer-links">
+                <li><a href="/warranty" class="footer-link">Warranty Policy</a></li>
+                <li><a href="/shipping" class="footer-link">Shipping & Delivery</a></li>
+                <li><a href="/privacy" class="footer-link">Privacy Policy</a></li>
+                <li><a href="/terms" class="footer-link">Terms of Service</a></li>
+            </ul>
+        </div>
+        
+        <div class="footer-col social-col">
+            <h4 class="col-heading">Connect</h4>
+            <div class="social-icons">
+                <a href="#" class="social-icon" aria-label="Find us on Facebook">F</a>
+                <a href="#" class="social-icon" aria-label="Follow us on Instagram">I</a>
+                <a href="#" class="social-icon" aria-label="Check out our YouTube Channel">Y</a>
+            </div>
+            <p class="payment-methods">We accept: Visa, MasterCard, Bank Transfer.</p>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <div class="container">
+            <p>&copy; 2025 SP Gadgets (Shinkomania Plug). All Rights Reserved.</p>
+        </div>
+    </div>
+</footer>
+
+  <script src="scripts/main.js"></script>
+</body>
+</html>
