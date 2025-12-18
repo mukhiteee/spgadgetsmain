@@ -1352,7 +1352,7 @@ input[type="range"]::-moz-range-thumb {
 // ========================================
 const shopState = {
     currentPage: 1,
-    productsPerPage: 10,
+    productsPerPage: 15,
     filters: {
         categories: [],
         brands: [],
