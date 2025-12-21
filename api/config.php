@@ -5,11 +5,11 @@
 // ===================================================
 
 // Defined constants using your provided credentials
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root'); // Set to your user
-define('DB_PASS', '');     // Set to no password (empty string)
+define('DB_HOST', 'db.fr-pari1.bengt.wasmernet.com');
+define('DB_USER', '7d2b685a72e280001cf500760eb1'); // Set to your user
+define('DB_PASS', '06947d2b-685a-74e2-8000-59847d9363e3');     // Set to no password (empty string)
 define('DB_NAME', 'spgadgets'); // Set to your database name
-
+define('DB_PORT', 10272);          // Default MySQL port
 // ===================================================
 // 2. CONNECTION FUNCTION
 // ===================================================
@@ -20,7 +20,7 @@ define('DB_NAME', 'spgadgets'); // Set to your database name
  */
 function connectDB() {
     // MySQL DSN (Data Source Name) string
-    $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
+    $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
 
     // PDO options for security and error handling
     $options = [
