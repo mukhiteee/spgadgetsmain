@@ -1,154 +1,179 @@
 <?php
-// api/process_order.php - Process and Save Order
+// api/process_order.php - Process Order with Inventory Management
+require_once('../../api/config.php');
+require_once('inventory.php');
+
 header('Content-Type: application/json');
 
-require_once('config.php');
-
-// Only allow POST requests
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success' => false, 'message' => 'Invalid request method']);
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;
 }
 
 try {
-    $pdo = connectDB();
+    // Get POST data
+    $data = json_decode(file_get_contents('php://input'), true);
     
-    // Get form data
-    $fullName = trim($_POST['fullName'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $address = trim($_POST['address'] ?? '');
-    $city = trim($_POST['city'] ?? '');
-    $state = trim($_POST['state'] ?? '');
-    $paymentMethod = trim($_POST['paymentMethod'] ?? '');
-    $orderNotes = trim($_POST['orderNotes'] ?? '');
-    
-    // Get cart and totals
-    $cartJson = $_POST['cart'] ?? '[]';
-    $cart = json_decode($cartJson, true);
-    $subtotal = floatval($_POST['subtotal'] ?? 0);
-    $shipping = floatval($_POST['shipping'] ?? 0);
-    $tax = floatval($_POST['tax'] ?? 0);
-    $total = floatval($_POST['total'] ?? 0);
+    if (!$data) {
+        throw new Exception('Invalid request data');
+    }
     
     // Validate required fields
-    if (empty($fullName) || empty($email) || empty($phone) || empty($address) || 
-        empty($city) || empty($state) || empty($paymentMethod)) {
-        echo json_encode(['success' => false, 'message' => 'All fields are required']);
-        exit;
+    $required = ['customer_name', 'customer_email', 'customer_phone', 'shipping_address', 'payment_method', 'cart'];
+    foreach ($required as $field) {
+        if (empty($data[$field])) {
+            throw new Exception("Missing required field: $field");
+        }
+    }
+    
+    $cart = $data['cart'];
+    
+    if (empty($cart)) {
+        throw new Exception('Cart is empty');
     }
     
     // Validate email
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(['success' => false, 'message' => 'Invalid email address']);
+    if (!filter_var($data['customer_email'], FILTER_VALIDATE_EMAIL)) {
+        throw new Exception('Invalid email address');
+    }
+    
+    // ========================================
+    // STEP 1: VALIDATE STOCK AVAILABILITY
+    // ========================================
+    $stockValidation = validateCartStock($cart);
+    
+    if (!$stockValidation['valid']) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Some items are out of stock or have insufficient quantity',
+            'errors' => $stockValidation['errors']
+        ]);
         exit;
     }
     
-    // Validate cart
-    if (empty($cart)) {
-        echo json_encode(['success' => false, 'message' => 'Cart is empty']);
-        exit;
-    }
-    
-    // Generate unique order number
-    $orderNumber = 'SPG-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6));
-    
-    // Start transaction
+    $pdo = connectDB();
     $pdo->beginTransaction();
     
-    try {
-        // Insert order into orders table
-        $stmt = $pdo->prepare('
-            INSERT INTO orders (
-                order_number, customer_name, customer_email, customer_phone,
-                shipping_address, city, state, payment_method, subtotal,
-                shipping_fee, tax, total_amount, order_notes, order_status, payment_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ');
+    // ========================================
+    // STEP 2: CALCULATE TOTAL
+    // ========================================
+    $totalAmount = 0;
+    $validatedCart = [];
+    
+    foreach ($cart as $item) {
+        $stmt = $pdo->prepare('SELECT id, name, price, stock_quantity FROM products WHERE id = ?');
+        $stmt->execute([$item['id']]);
+        $product = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        $stmt->execute([
-            $orderNumber,
-            $fullName,
-            $email,
-            $phone,
-            $address,
-            $city,
-            $state,
-            $paymentMethod,
-            $subtotal,
-            $shipping,
-            $tax,
-            $total,
-            $orderNotes,
-            'pending',
-            'pending'
-        ]);
-        
-        $orderId = $pdo->lastInsertId();
-        
-        // Insert order items and update stock
-        $itemStmt = $pdo->prepare('
-            INSERT INTO order_items (
-                order_id, product_id, product_name, product_brand,
-                product_price, quantity, subtotal
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ');
-        
-        $stockStmt = $pdo->prepare('
-            UPDATE products 
-            SET stock_quantity = stock_quantity - ? 
-            WHERE id = ? AND stock_quantity >= ?
-        ');
-        
-        foreach ($cart as $item) {
-            $itemSubtotal = $item['price'] * $item['quantity'];
-            
-            // Insert order item
-            $itemStmt->execute([
-                $orderId,
-                $item['id'],
-                $item['name'],
-                $item['brand'],
-                $item['price'],
-                $item['quantity'],
-                $itemSubtotal
-            ]);
-            
-            // Update stock quantity
-            $stockStmt->execute([
-                $item['quantity'],
-                $item['id'],
-                $item['quantity']
-            ]);
-            
-            // Check if stock was actually updated
-            if ($stockStmt->rowCount() === 0) {
-                throw new Exception("Insufficient stock for product: {$item['name']}");
-            }
+        if (!$product) {
+            throw new Exception("Product not found: {$item['id']}");
         }
         
-        // Commit transaction
-        $pdo->commit();
+        // Double-check stock
+        if ($product['stock_quantity'] < $item['quantity']) {
+            throw new Exception("{$product['name']} is out of stock");
+        }
         
-        // Return success
-        echo json_encode([
-            'success' => true,
-            'message' => 'Order placed successfully',
-            'order_number' => $orderNumber,
-            'order_id' => $orderId
-        ]);
+        $itemTotal = $product['price'] * $item['quantity'];
+        $totalAmount += $itemTotal;
         
-    } catch (Exception $e) {
-        // Rollback on error
-        $pdo->rollBack();
-        throw $e;
+        $validatedCart[] = [
+            'product_id' => $product['id'],
+            'product_name' => $product['name'],
+            'price' => $product['price'],
+            'quantity' => $item['quantity']
+        ];
     }
     
+    // ========================================
+    // STEP 3: CREATE ORDER
+    // ========================================
+    $stmt = $pdo->prepare('
+        INSERT INTO orders (
+            customer_name, 
+            customer_email, 
+            customer_phone, 
+            shipping_address, 
+            payment_method, 
+            total_amount, 
+            order_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ');
+    
+    $stmt->execute([
+        $data['customer_name'],
+        $data['customer_email'],
+        $data['customer_phone'],
+        $data['shipping_address'],
+        $data['payment_method'],
+        $totalAmount,
+        'pending'
+    ]);
+    
+    $orderId = $pdo->lastInsertId();
+    
+    // ========================================
+    // STEP 4: CREATE ORDER ITEMS
+    // ========================================
+    $stmt = $pdo->prepare('
+        INSERT INTO order_items (order_id, product_id, product_name, price, quantity) 
+        VALUES (?, ?, ?, ?, ?)
+    ');
+    
+    foreach ($validatedCart as $item) {
+        $stmt->execute([
+            $orderId,
+            $item['product_id'],
+            $item['product_name'],
+            $item['price'],
+            $item['quantity']
+        ]);
+    }
+    
+    // ========================================
+    // STEP 5: REDUCE STOCK (INVENTORY MANAGEMENT)
+    // ========================================
+    $stockReduced = reduceStockForOrder($orderId);
+    
+    if (!$stockReduced) {
+        // If stock reduction fails, rollback the entire order
+        $pdo->rollBack();
+        
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to update inventory. Order cancelled.'
+        ]);
+        exit;
+    }
+    
+    // ========================================
+    // STEP 6: COMMIT TRANSACTION
+    // ========================================
+    $pdo->commit();
+    
+    // Success response
+    echo json_encode([
+        'success' => true,
+        'message' => 'Order placed successfully',
+        'order_id' => $orderId,
+        'order_number' => str_pad($orderId, 6, '0', STR_PAD_LEFT),
+        'total_amount' => $totalAmount
+    ]);
+    
 } catch (Exception $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    
     error_log("Order processing error: " . $e->getMessage());
+    
+    http_response_code(400);
     echo json_encode([
         'success' => false,
-        'message' => 'Failed to process order: ' . $e->getMessage()
+        'message' => $e->getMessage()
     ]);
 }
 ?>

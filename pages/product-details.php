@@ -775,7 +775,7 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
 </head>
 <body>
     <div class="container">
-        <a href="../shop/shop.php" class="back-button">
+        <a href="../pages/shop.php" class="back-button">
             <i class="fas fa-arrow-left"></i> Back to Shop
         </a>
 
