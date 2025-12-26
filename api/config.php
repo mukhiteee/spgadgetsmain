@@ -5,11 +5,17 @@
 // ===================================================
 
 // Defined constants using your provided credentials
+// define('DB_HOST', 'db.fr-pari1.bengt.wasmernet.com');
+// define('DB_USER', '7d2b685a72e280001cf500760eb1'); // Set to your user
+// define('DB_PASS', '06947d2b-685a-74e2-8000-59847d9363e3');     // Set to no password (empty string)
+// define('DB_NAME', 'spgadgets'); // Set to your database name
+// define('DB_PORT', 10272);          // Default MySQL port
 define('DB_HOST', 'db.fr-pari1.bengt.wasmernet.com');
-define('DB_USER', '7d2b685a72e280001cf500760eb1'); // Set to your user
-define('DB_PASS', '06947d2b-685a-74e2-8000-59847d9363e3');     // Set to no password (empty string)
-define('DB_NAME', 'spgadgets'); // Set to your database name
-define('DB_PORT', 10272);          // Default MySQL port
+define('DB_USER', 'dbhFNXiAHKU8HShUJg9gDfLM');
+define('DB_PASS', '06947d61-29bd-7ebd-8000-2355069a3ca0');
+define('DB_NAME', 'spgadgets');
+define('DB_PORT', 10272); // Default MySQL port
+
 // ===================================================
 // 2. CONNECTION FUNCTION
 // ===================================================

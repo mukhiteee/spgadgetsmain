@@ -1,6 +1,35 @@
 <?php
-// pages/checkout.php - Enhanced Checkout Page
+// pages/checkout.php - Enhanced Checkout Page with Authentication
 session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    // Store intended destination
+    $_SESSION['checkout_redirect'] = true;
+    // Redirect to login page
+    header('Location: login.php?redirect=checkout');
+    exit();
+}
+
+// Get user information
+require_once('../api/config.php');
+
+try {
+    $pdo = connectDB();
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
+    $stmt->execute([$_SESSION['user_id']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$user) {
+        session_destroy();
+        header('Location: login.php');
+        exit();
+    }
+} catch (Exception $e) {
+    error_log("Error fetching user: " . $e->getMessage());
+    header('Location: login.php');
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +59,7 @@ session_start();
         }
 
         body {
-            font-family: system-ui, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background: linear-gradient(135deg, var(--neutral-light) 0%, var(--neutral-mid) 100%);
             color: var(--primary-dark);
             line-height: 1.6;
@@ -59,6 +88,13 @@ session_start();
             transform: translateX(-5px);
         }
 
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
         .page-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -68,7 +104,20 @@ session_start();
 
         .page-subtitle {
             color: var(--primary-medium);
-            margin-bottom: 2rem;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .user-email {
+            font-size: 0.9rem;
+            color: var(--primary-medium);
         }
 
         .checkout-grid {
@@ -145,6 +194,11 @@ session_start();
         .form-group select.error,
         .form-group textarea.error {
             border-color: var(--error);
+        }
+
+        .form-group input:disabled {
+            background: var(--neutral-light);
+            cursor: not-allowed;
         }
 
         .error-message {
@@ -344,6 +398,16 @@ session_start();
                 position: relative;
                 top: 0;
             }
+
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .user-info {
+                text-align: left;
+            }
         }
 
         @media (max-width: 768px) {
@@ -377,12 +441,23 @@ session_start();
     </div>
 
     <div class="checkout-container">
-        <a href="../shop/shop.php" class="back-link">
+        <a href="shop.php" class="back-link">
             <i class="fas fa-arrow-left"></i> Back to Shop
         </a>
 
-        <h1 class="page-title">Checkout</h1>
-        <p class="page-subtitle">Complete your order</p>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Checkout</h1>
+                <p class="page-subtitle">Complete your order</p>
+            </div>
+            <div class="user-info">
+                <div class="user-name">
+                    <i class="fas fa-user-circle"></i> 
+                    <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>
+                </div>
+                <div class="user-email"><?php echo htmlspecialchars($user['email']); ?></div>
+            </div>
+        </div>
 
         <div id="checkoutContent">
             <!-- Content will be loaded by JavaScript -->
@@ -390,6 +465,15 @@ session_start();
     </div>
 
     <script>
+        // Pass user data to JavaScript
+        const userData = {
+            id: <?php echo $user['id']; ?>,
+            firstName: <?php echo json_encode($user['first_name']); ?>,
+            lastName: <?php echo json_encode($user['last_name']); ?>,
+            email: <?php echo json_encode($user['email']); ?>,
+            phone: <?php echo json_encode($user['phone'] ?? ''); ?>
+        };
+
         // Load cart from localStorage
         let cart = JSON.parse(localStorage.getItem('checkout_cart') || '[]');
         
@@ -412,7 +496,7 @@ session_start();
                     <i class="fas fa-shopping-cart"></i>
                     <h2>Your cart is empty</h2>
                     <p>Add some products to your cart before checking out.</p>
-                    <a href="../shop/shop.php" class="shop-link">Continue Shopping</a>
+                    <a href="shop.php" class="shop-link">Continue Shopping</a>
                 </div>
             `;
         }
@@ -430,20 +514,24 @@ session_start();
                                 <h3>Contact Information</h3>
                                 <div class="form-row">
                                     <div class="form-group">
-                                        <label>Full Name <span class="required">*</span></label>
-                                        <input type="text" name="fullName" id="fullName" required>
-                                        <span class="error-message" id="fullNameError">Please enter your full name</span>
+                                        <label>First Name <span class="required">*</span></label>
+                                        <input type="text" name="firstName" id="firstName" value="${userData.firstName}" disabled>
                                     </div>
                                     <div class="form-group">
-                                        <label>Email Address <span class="required">*</span></label>
-                                        <input type="email" name="email" id="email" required>
-                                        <span class="error-message" id="emailError">Please enter a valid email</span>
+                                        <label>Last Name <span class="required">*</span></label>
+                                        <input type="text" name="lastName" id="lastName" value="${userData.lastName}" disabled>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>Phone Number <span class="required">*</span></label>
-                                    <input type="tel" name="phone" id="phone" required placeholder="+234 XXX XXX XXXX">
-                                    <span class="error-message" id="phoneError">Please enter a valid phone number</span>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Email Address <span class="required">*</span></label>
+                                        <input type="email" name="email" id="email" value="${userData.email}" disabled>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Phone Number <span class="required">*</span></label>
+                                        <input type="tel" name="phone" id="phone" value="${userData.phone}" placeholder="+234 XXX XXX XXXX" required>
+                                        <span class="error-message" id="phoneError">Please enter a valid phone number</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -567,16 +655,14 @@ session_start();
             container.innerHTML = '';
 
             cart.forEach(item => {
-                const imagePath = item.image ? 
-                    (item.image.startsWith('http') ? item.image : `../assets/products/${item.image}`) : 
-                    '../assets/products/placeholder.jpg';
+                const imagePath = item.image || '../assets/products/placeholder.jpg';
 
                 const itemEl = document.createElement('div');
                 itemEl.className = 'summary-item';
                 itemEl.innerHTML = `
-                    <img src="${imagePath}" alt="${item.name}" class="summary-item-image" onerror="this.src='https://via.placeholder.com/60'">
+                    <img src="${imagePath}" alt="${escapeHtml(item.name)}" class="summary-item-image" onerror="this.src='../assets/products/placeholder.jpg'">
                     <div class="summary-item-details">
-                        <div class="summary-item-name">${item.name}</div>
+                        <div class="summary-item-name">${escapeHtml(item.name)}</div>
                         <div class="summary-item-price">₦${formatPrice(item.price)}</div>
                         <div class="summary-item-qty">Qty: ${item.quantity}</div>
                     </div>
@@ -600,6 +686,12 @@ session_start();
             });
         }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         async function placeOrder() {
             // Validate form
             if (!validateForm()) {
@@ -610,7 +702,19 @@ session_start();
             document.getElementById('loadingOverlay').classList.add('active');
 
             // Get form data
-            const formData = new FormData(document.getElementById('checkoutForm'));
+            const formData = new FormData();
+            
+            // Add user data
+            formData.append('user_id', userData.id);
+            formData.append('firstName', userData.firstName);
+            formData.append('lastName', userData.lastName);
+            formData.append('email', userData.email);
+            formData.append('phone', document.getElementById('phone').value);
+            formData.append('address', document.getElementById('address').value);
+            formData.append('city', document.getElementById('city').value);
+            formData.append('state', document.getElementById('state').value);
+            formData.append('paymentMethod', document.getElementById('paymentMethod').value);
+            formData.append('orderNotes', document.getElementById('orderNotes').value);
             
             // Add cart and totals
             const subtotal = calculateSubtotal();
@@ -651,7 +755,7 @@ session_start();
 
         function validateForm() {
             let isValid = true;
-            const fields = ['fullName', 'email', 'phone', 'address', 'city', 'state', 'paymentMethod'];
+            const fields = ['phone', 'address', 'city', 'state', 'paymentMethod'];
 
             fields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
@@ -659,21 +763,11 @@ session_start();
 
                 if (!field.value.trim()) {
                     field.classList.add('error');
-                    error.classList.add('show');
+                    if (error) error.classList.add('show');
                     isValid = false;
                 } else {
                     field.classList.remove('error');
-                    error.classList.remove('show');
-                }
-
-                // Special validation for email
-                if (fieldId === 'email' && field.value.trim()) {
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailRegex.test(field.value)) {
-                        field.classList.add('error');
-                        error.classList.add('show');
-                        isValid = false;
-                    }
+                    if (error) error.classList.remove('show');
                 }
             });
 

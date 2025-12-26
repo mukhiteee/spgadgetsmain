@@ -1,12 +1,12 @@
 <?php
-// pages/product-details.php - Mobile-Optimized Comprehensive Product View
+// pages/product-details.php - Complete Product Details with All Features
 require_once('../api/config.php');
 
 // Get product ID from URL
 $productId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($productId <= 0) {
-    header('Location: ../shop/shop.php');
+    header('Location: shop.php');
     exit;
 }
 
@@ -18,19 +18,24 @@ try {
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$product) {
-        header('Location: ../shop/shop.php');
+        header('Location: shop.php');
         exit;
     }
     
-    // Fetch product images from gallery
-    $imagesStmt = $pdo->prepare('
-        SELECT image_url, alt_text 
-        FROM product_images 
-        WHERE product_id = ? 
-        ORDER BY image_order ASC
-    ');
-    $imagesStmt->execute([$productId]);
-    $productImages = $imagesStmt->fetchAll(PDO::FETCH_ASSOC);
+    // Fetch product images from gallery (if table exists)
+    $productImages = [];
+    try {
+        $imagesStmt = $pdo->prepare('
+            SELECT image_url, alt_text 
+            FROM product_images 
+            WHERE product_id = ? 
+            ORDER BY image_order ASC
+        ');
+        $imagesStmt->execute([$productId]);
+        $productImages = $imagesStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Table doesn't exist yet, that's fine
+    }
     
     // If no gallery images, use the main product image as fallback
     if (empty($productImages) && !empty($product['image'])) {
@@ -43,14 +48,38 @@ try {
     $relatedStmt = $pdo->prepare('
         SELECT id, name, brand, price, image, stock_quantity 
         FROM products 
-        WHERE category = ? AND id != ? 
+        WHERE category = ? AND id != ? AND stock_quantity > 0
         LIMIT 4
     ');
     $relatedStmt->execute([$product['category'], $productId]);
     $relatedProducts = $relatedStmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Fetch reviews (if reviews table exists)
+    $reviews = [];
+    $avgRating = 0;
+    try {
+        $reviewsStmt = $pdo->prepare('
+            SELECT r.*, u.first_name, u.last_name 
+            FROM reviews r
+            LEFT JOIN users u ON r.user_id = u.id
+            WHERE r.product_id = ?
+            ORDER BY r.created_at DESC
+            LIMIT 10
+        ');
+        $reviewsStmt->execute([$productId]);
+        $reviews = $reviewsStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Calculate average rating
+        if (!empty($reviews)) {
+            $totalRating = array_sum(array_column($reviews, 'rating'));
+            $avgRating = round($totalRating / count($reviews), 1);
+        }
+    } catch (Exception $e) {
+        // Reviews table doesn't exist yet
+    }
+    
 } catch (Exception $e) {
-    header('Location: ../shop/shop.php');
+    header('Location: shop.php');
     exit;
 }
 
@@ -65,6 +94,7 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
     <title><?php echo htmlspecialchars($product['name']); ?> - SP Gadgets</title>
     <link rel="stylesheet" href="../styles/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="../styles/main.css">
     <style>
         :root {
             --primary-dark: #0f172a;
@@ -157,10 +187,18 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
 
         .main-image-container.zoomed {
             cursor: zoom-out;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.95);
+            height: 100vh;
+            border-radius: 0;
+            margin: 0;
         }
 
         .main-image-container.zoomed .product-main-image {
-            transform: scale(2);
+            transform: scale(1.5);
+            object-fit: contain;
         }
 
         .image-thumbnails {
@@ -449,6 +487,12 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
             transform: scale(0.95);
         }
 
+        .wishlist-btn.active {
+            background: var(--primary-medium);
+            color: white;
+            border-color: var(--primary-medium);
+        }
+
         .stock-info {
             padding: 12px;
             background: var(--neutral-light);
@@ -610,6 +654,74 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
             font-size: 0.9rem;
         }
 
+        /* REVIEWS SECTION */
+        .reviews-section {
+            margin-top: 20px;
+        }
+
+        .review-summary {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: var(--neutral-light);
+            border-radius: 8px;
+        }
+
+        .overall-rating {
+            text-align: center;
+        }
+
+        .rating-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .rating-stars {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            margin: 8px 0;
+        }
+
+        .rating-count {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .review-card {
+            background: var(--neutral-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-name {
+            font-weight: 700;
+        }
+
+        .review-date {
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .review-rating {
+            color: #fbbf24;
+            margin-bottom: 8px;
+        }
+
+        .review-text {
+            line-height: 1.6;
+            color: #444;
+        }
+
         /* RELATED PRODUCTS */
         .related-products-section {
             background: var(--white);
@@ -763,6 +875,10 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                 padding: 15px 30px;
                 font-size: 1.1rem;
             }
+
+            .review-summary {
+                grid-template-columns: 200px 1fr;
+            }
         }
 
         /* LARGE DESKTOP */
@@ -774,8 +890,120 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
     </style>
 </head>
 <body>
+    
+  <!-- CLEANER NAVBAR -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <!-- Logo + Brand -->
+      <a href="index.html" class="navbar-brand">
+        <img src="../assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+        <div class="navbar-text">
+          <h1 class="navbar-title">SP Gadgets</h1>
+          <p class="navbar-subtitle">Shinkomania Plug</p>
+        </div>
+      </a>
+
+      <!-- Center Nav (Desktop Only) -->
+      <nav class="navbar-nav" aria-label="Primary navigation">
+        <a href="#home" class="nav-link">Home</a>
+        <a href="#about" class="nav-link">About</a>
+        <a href="pages/shop.php" class="nav-link">Shop</a>
+        <a href="#products" class="nav-link">Products</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+
+      <!-- Right Actions (Minimal) -->
+      <div class="navbar-actions">
+        <!-- Theme Toggle Button (Add to your top-bar-right section) -->
+        <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fas fa-moon theme-icon" id="themeIcon"></i>
+        </button>
+        <!-- Cart Icon -->
+        <button class="icon-btn" aria-label="Shopping cart" id="cartBtn">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="cart-badge" id="cart-badge">0</span>
+        </button>
+
+        <!-- Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle" aria-label="Menu" aria-expanded="false">
+          <span class="hamburger"></span>
+          <span class="hamburger"></span>
+          <span class="hamburger"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ENHANCED SIDEBAR with Search & User -->
+  <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
+    <div class="mobile-overlay-content">
+      <div class="mobile-overlay-header">
+        <div class="navbar-brand">
+          <img src="../assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+          <div class="navbar-text">
+            <h2 class="navbar-title">SP Gadgets</h2>
+          </div>
+        </div>
+        <button class="mobile-overlay-close" id="overlay-close" aria-label="Close menu">×</button>
+      </div>
+
+      <!-- Search in Sidebar -->
+      <div class="sidebar-search">
+        <input type="text" placeholder="Search products..." id="sidebarSearchInput" onkeypress="if(event.key==='Enter') performSearch()">
+      </div>
+
+      <!-- User Section -->
+      <div class="sidebar-user">
+        <div class="sidebar-user-icon">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="sidebar-user-name">Guest</div>
+        <div class="sidebar-user-buttons">
+          <a href="pages/login.php" class="sidebar-btn sidebar-btn-primary">Login</a>
+          <a href="pages/register.php" class="sidebar-btn sidebar-btn-outline">Sign Up</a>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#home" class="mobile-nav-link">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="#about" class="mobile-nav-link">
+          <i class="fas fa-info-circle"></i>
+          <span>About Us</span>
+        </a>
+        <a href="pages/shop.php" class="mobile-nav-link">
+          <i class="fas fa-store"></i>
+          <span>Shop</span>
+        </a>
+        <a href="#products" class="mobile-nav-link">
+          <i class="fas fa-box-open"></i>
+          <span>Products</span>
+        </a>
+        <a href="#features" class="mobile-nav-link">
+          <i class="fas fa-star"></i>
+          <span>Features</span>
+        </a>
+        <a href="#contact" class="mobile-nav-link">
+          <i class="fas fa-phone"></i>
+          <span>Contact</span>
+        </a>
+      </nav>
+
+      <!-- Shop Button -->
+      <div class="mobile-cta">
+        <a href="pages/shop.php" class="shop-btn">
+          <i class="fas fa-shopping-bag"></i> Shop Now
+        </a>
+      </div>
+    </div>
+  </div>
+
     <div class="container">
-        <a href="../pages/shop.php" class="back-button">
+        <a href="shop.php" class="back-button">
             <i class="fas fa-arrow-left"></i> Back to Shop
         </a>
 
@@ -879,7 +1107,7 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                     <button class="add-to-cart-btn" id="addToCartBtn">
                         <i class="fas fa-shopping-cart"></i> Add to Cart
                     </button>
-                    <button class="wishlist-btn" onclick="addToWishlist()">
+                    <button class="wishlist-btn" id="wishlistBtn" onclick="toggleWishlist()">
                         <i class="far fa-heart"></i>
                     </button>
                 </div>
@@ -940,6 +1168,11 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                 <button class="tab-btn" onclick="switchTab(event, 'specifications')">
                     <i class="fas fa-list"></i> Specs
                 </button>
+                <?php if (!empty($reviews)): ?>
+                <button class="tab-btn" onclick="switchTab(event, 'reviews')">
+                    <i class="fas fa-star"></i> Reviews (<?php echo count($reviews); ?>)
+                </button>
+                <?php endif; ?>
                 <button class="tab-btn" onclick="switchTab(event, 'shipping')">
                     <i class="fas fa-truck"></i> Shipping
                 </button>
@@ -986,6 +1219,48 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                     </div>
                 </div>
             </div>
+
+            <!-- Reviews Tab -->
+            <?php if (!empty($reviews)): ?>
+            <div class="tab-content" id="reviews-tab">
+                <div class="reviews-section">
+                    <div class="review-summary">
+                        <div class="overall-rating">
+                            <div class="rating-number"><?php echo $avgRating; ?></div>
+                            <div class="rating-stars">
+                                <?php
+                                for ($i = 1; $i <= 5; $i++) {
+                                    echo $i <= floor($avgRating) ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+                                }
+                                ?>
+                            </div>
+                            <div class="rating-count"><?php echo count($reviews); ?> reviews</div>
+                        </div>
+                    </div>
+
+                    <?php foreach ($reviews as $review): ?>
+                    <div class="review-card">
+                        <div class="review-header">
+                            <div class="reviewer-name">
+                                <?php echo htmlspecialchars($review['first_name'] . ' ' . $review['last_name']); ?>
+                            </div>
+                            <div class="review-date">
+                                <?php echo date('M d, Y', strtotime($review['created_at'])); ?>
+                            </div>
+                        </div>
+                        <div class="review-rating">
+                            <?php
+                            for ($i = 1; $i <= 5; $i++) {
+                                echo $i <= $review['rating'] ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
+                            }
+                            ?>
+                        </div>
+                        <p class="review-text"><?php echo htmlspecialchars($review['comment']); ?></p>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Shipping Tab -->
             <div class="tab-content" id="shipping-tab">
@@ -1043,6 +1318,13 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
         let currentQty = 1;
         const galleryImages = <?php echo json_encode($productImages); ?>;
         let currentImageIndex = 0;
+        let isWishlisted = localStorage.getItem('wishlist_' + product.id) === 'true';
+
+        // Initialize wishlist button state
+        if (isWishlisted) {
+            document.getElementById('wishlistBtn').classList.add('active');
+            document.querySelector('#wishlistBtn i').className = 'fas fa-heart';
+        }
 
         // IMAGE GALLERY
         function changeImage(index) {
@@ -1068,15 +1350,16 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
         if (prevBtn) prevBtn.addEventListener('click', () => { if (currentImageIndex > 0) changeImage(currentImageIndex - 1); });
         if (nextBtn) nextBtn.addEventListener('click', () => { if (currentImageIndex < galleryImages.length - 1) changeImage(currentImageIndex + 1); });
 
-        // Zoom
+        // FULL-SCREEN ZOOM
         const mainImageContainer = document.getElementById('mainImageContainer');
         const mainImage = document.getElementById('mainImage');
         let isZoomed = false;
         if (mainImageContainer) {
             mainImageContainer.addEventListener('click', (e) => {
-                if (e.target.closest('.gallery-nav')) return;
+                if (e.target.closest('.gallery-nav') || e.target.closest('.product-badge')) return;
                 isZoomed = !isZoomed;
                 mainImageContainer.classList.toggle('zoomed', isZoomed);
+                document.body.style.overflow = isZoomed ? 'hidden' : '';
             });
         }
 
@@ -1084,7 +1367,11 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' && currentImageIndex > 0) changeImage(currentImageIndex - 1);
             else if (e.key === 'ArrowRight' && currentImageIndex < galleryImages.length - 1) changeImage(currentImageIndex + 1);
-            else if (e.key === 'Escape' && isZoomed) { mainImageContainer.classList.remove('zoomed'); isZoomed = false; }
+            else if (e.key === 'Escape' && isZoomed) { 
+                mainImageContainer.classList.remove('zoomed'); 
+                isZoomed = false;
+                document.body.style.overflow = '';
+            }
         });
 
         // Touch swipe
@@ -1159,7 +1446,7 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                 }
                 
                 localStorage.setItem('sp_cart', JSON.stringify(cart));
-                addToCartBtn.textContent = '✓ Added to Cart!';
+                addToCartBtn.innerHTML = '<i class="fas fa-check"></i> Added to Cart!';
                 addToCartBtn.style.background = '#28a745';
                 setTimeout(() => {
                     addToCartBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Add to Cart';
@@ -1171,8 +1458,23 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
             }
         }
 
-        function addToWishlist() {
-            showToast('Added to wishlist!', 'success');
+        // WISHLIST
+        function toggleWishlist() {
+            const btn = document.getElementById('wishlistBtn');
+            const icon = btn.querySelector('i');
+            
+            isWishlisted = !isWishlisted;
+            localStorage.setItem('wishlist_' + product.id, isWishlisted);
+            
+            if (isWishlisted) {
+                btn.classList.add('active');
+                icon.className = 'fas fa-heart';
+                showToast('Added to wishlist!', 'success');
+            } else {
+                btn.classList.remove('active');
+                icon.className = 'far fa-heart';
+                showToast('Removed from wishlist', 'info');
+            }
         }
 
         function showToast(message, type = 'info') {
@@ -1186,7 +1488,7 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                 bottom: 20px;
                 right: 20px;
                 left: 20px;
-                background: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : '#dc3545'};
+                background: ${type === 'success' ? '#28a745' : type === 'warning' ? '#ffc107' : type === 'info' ? '#1F95B1' : '#dc3545'};
                 color: ${type === 'warning' ? '#333' : 'white'};
                 padding: 14px 18px;
                 border-radius: 8px;
@@ -1194,17 +1496,53 @@ $isOutOfStock = (int)$product['stock_quantity'] === 0;
                 z-index: 10000;
                 animation: slideInUp 0.3s ease-out;
                 font-size: 0.95rem;
+                font-weight: 600;
             `;
             
-            const icon = type === 'success' ? '✓' : type === 'warning' ? '⚠️' : '✗';
+            const icon = type === 'success' ? '✓' : type === 'warning' ? '⚠️' : type === 'info' ? 'ℹ' : '✗';
             toast.innerHTML = `<span style="margin-right:8px;font-size:1.1rem;">${icon}</span>${message}`;
             
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutDown 0.3s ease-out';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         updateQtyDisplay();
         updateNavButtons();
+
+        
+// Theme Toggle Functionality
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('admin-theme', newTheme);
+    
+    updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'dark') {
+        icon.className = 'fas fa-moon theme-icon';
+    } else {
+        icon.className = 'fas fa-sun theme-icon';
+    }
+}
+
+// Load saved theme on page load
+function loadTheme() {
+    const savedTheme = localStorage.getItem('admin-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+// Initialize theme when page loads
+loadTheme();
     </script>
 </body>
 </html>

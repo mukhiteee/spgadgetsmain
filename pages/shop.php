@@ -1,53 +1,64 @@
 <?php
-    // shop.php - The Dynamic Product Catalogue
+// shop.php - The Dynamic Product Catalogue with GET Parameter Integration
 
-    $project_base = '/sp-gadgets/'; 
-    
-    require_once('../api/config.php');
+$project_base = '/sp-gadgets/'; 
 
-    // Fetch filter options and initial products
-    $uniqueCategories = [];
-    $uniqueBrands = [];
-    $minPrice = 0;
-    $maxPrice = 10000;
-    $initialProducts = [];
+require_once('../api/config.php');
+
+// ===== COLLECT FILTERS FROM GET PARAMETERS =====
+$urlFilters = [
+    'category' => isset($_GET['category']) ? trim($_GET['category']) : '',
+    'search' => isset($_GET['search']) ? trim($_GET['search']) : '',
+    'condition' => isset($_GET['condition']) ? trim($_GET['condition']) : '',
+    'brand' => isset($_GET['brand']) ? trim($_GET['brand']) : '',
+    'min_price' => isset($_GET['min_price']) ? (float)$_GET['min_price'] : 0,
+    'max_price' => isset($_GET['max_price']) ? (float)$_GET['max_price'] : 0,
+    'sort' => isset($_GET['sort']) ? trim($_GET['sort']) : 'featured'
+];
+
+// Fetch filter options and initial products
+$uniqueCategories = [];
+$uniqueBrands = [];
+$minPrice = 0;
+$maxPrice = 10000;
+$initialProducts = [];
+
+try {
+    $pdo = connectDB();
     
-    try {
-        $pdo = connectDB();
-        
-        // Fetch initial products (first 9 for page load)
-        $productStmt = $pdo->prepare('SELECT id, name, brand, category, price, item_condition, image, stock_quantity FROM products LIMIT 50');
-        $productStmt->execute();
-        $initialProducts = $productStmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Fetch unique categories
-        $categoryStmt = $pdo->prepare('SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != "" ORDER BY category');
-        $categoryStmt->execute();
-        $uniqueCategories = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Fetch unique brands
-        $brandStmt = $pdo->prepare('SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != "" ORDER BY brand');
-        $brandStmt->execute();
-        $uniqueBrands = $brandStmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        // Fetch min and max prices
-        $priceStmt = $pdo->prepare('SELECT MIN(price) as min_price, MAX(price) as max_price FROM products');
-        $priceStmt->execute();
-        $priceRange = $priceStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($priceRange) {
-            $minPrice = floor($priceRange['min_price']);
-            $maxPrice = ceil($priceRange['max_price']);
-        }
-        
-        // Get total product count
-        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM products');
-        $countStmt->execute();
-        $totalProducts = $countStmt->fetchColumn();
-        
-    } catch (\Exception $e) {
-        error_log("Error fetching data: " . $e->getMessage());
+    // Fetch initial products (first 50 for page load)
+    $productStmt = $pdo->prepare('SELECT id, name, brand, category, price, item_condition, image, stock_quantity FROM products LIMIT 50');
+    $productStmt->execute();
+    $initialProducts = $productStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Fetch unique categories
+    $categoryStmt = $pdo->prepare('SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != "" ORDER BY category');
+    $categoryStmt->execute();
+    $uniqueCategories = $categoryStmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Fetch unique brands
+    $brandStmt = $pdo->prepare('SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand != "" ORDER BY brand');
+    $brandStmt->execute();
+    $uniqueBrands = $brandStmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    // Fetch min and max prices
+    $priceStmt = $pdo->prepare('SELECT MIN(price) as min_price, MAX(price) as max_price FROM products');
+    $priceStmt->execute();
+    $priceRange = $priceStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($priceRange) {
+        $minPrice = floor($priceRange['min_price']);
+        $maxPrice = ceil($priceRange['max_price']);
     }
+    
+    // Get total product count
+    $countStmt = $pdo->prepare('SELECT COUNT(*) FROM products');
+    $countStmt->execute();
+    $totalProducts = $countStmt->fetchColumn();
+    
+} catch (\Exception $e) {
+    error_log("Error fetching data: " . $e->getMessage());
+}
 ?>
 
 <!DOCTYPE html>
@@ -65,10 +76,37 @@
    WORLD-CLASS STORE DESIGN - FULLY RESPONSIVE
    Modern, Premium, Professional
    ======================================== */
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-:root {
+/* =====================================================
+   THEME VARIABLES - DARK & LIGHT MODE
+   ===================================================== */
+
+/* DARK THEME (Default) */
+:root[data-theme="dark"] {
+    --primary: #1F95B1;
+    --accent: #5CB9A4;
+    --text: #ffffff;
+    --text-muted: #aaaaaa;
+    --bg: #0f0f0f;
+    --bg-light: #212121;
+    --border: #3f3f3f;
+    --primary-dark: #1F95B1;
+    --primary-medium: #1F95B1;
+    --accent-warm: #5CB9A4;
+    --accent-terracotta: #1F95B1;
+    --neutral-light: #282828;
+    --neutral-mid: #3f3f3f;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 20px 50px rgba(0, 0, 0, 0.7);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* LIGHT THEME */
+:root[data-theme="light"] {
     --primary: #1F95B1;
     --accent: #5CB9A4;
     --text: #0f172a;
@@ -94,6 +132,13 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* Smooth transitions for theme changes */
+*,
+*::before,
+*::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 html {
@@ -176,7 +221,7 @@ body {
     display: flex;
     width: 100%;
     padding: 0.875rem 1.25rem;
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
     border: none;
     border-radius: 8px;
@@ -191,7 +236,7 @@ body {
 }
 
 .filter-toggle-btn:hover {
-    background: var(--primary-dark);
+    background: var(--primary);
     transform: translateY(-1px);
 }
 
@@ -238,7 +283,7 @@ body {
 
 /* Filter Sidebar - RESPONSIVE */
 .shop-filter-sidebar {
-    background: var(--white);
+    background: var(--bg);
     padding: 1.25rem;
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
@@ -375,6 +420,7 @@ body {
     transition: var(--transition);
     padding: 0.25rem 0;
     font-size: 0.8125rem;
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -488,7 +534,7 @@ input[type="range"]::-moz-range-thumb {
 .clear-filters {
     width: 100%;
     padding: 0.625rem 1rem;
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
     border: none;
     border-radius: 6px;
@@ -506,7 +552,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .clear-filters:hover {
-    background: var(--primary-dark);
+    background: var(--primary);
     transform: translateY(-1px);
 }
 
@@ -530,6 +576,10 @@ input[type="range"]::-moz-range-thumb {
     align-items: center;
     z-index: 10;
     border-radius: 12px;
+}
+
+:root[data-theme="dark"] .loading-overlay {
+    background: rgba(15, 15, 15, 0.9);
 }
 
 .loading-overlay.active {
@@ -566,6 +616,8 @@ input[type="range"]::-moz-range-thumb {
     transition: var(--transition);
     margin-bottom: 1rem;
     font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -578,6 +630,10 @@ input[type="range"]::-moz-range-thumb {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(31, 149, 177, 0.1);
+}
+
+.search-input::placeholder {
+    color: var(--text-muted);
 }
 
 .results-header {
@@ -614,7 +670,8 @@ input[type="range"]::-moz-range-thumb {
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 0.875rem;
-    background: var(--white);
+    background: var(--bg);
+    color: var(--text);
     cursor: pointer;
     transition: var(--transition);
     font-family: 'Inter', sans-serif;
@@ -697,7 +754,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* PREMIUM PRODUCT CARD - RESPONSIVE */
 .product-card {
-    background: var(--white);
+    background: var(--bg);
     border-radius: 8px;
     overflow: hidden;
     box-shadow: var(--shadow-sm);
@@ -930,7 +987,7 @@ input[type="range"]::-moz-range-thumb {
 .add-to-cart-btn {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
     border: none;
     border-radius: 6px;
@@ -958,7 +1015,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
-    background: var(--primary-dark);
+    background: var(--primary);
     transform: translateY(-1px);
 }
 
@@ -991,7 +1048,7 @@ input[type="range"]::-moz-range-thumb {
 .pagination-btn,
 .page-number {
     padding: 0.5rem 0.75rem;
-    background: var(--white);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
     cursor: pointer;
@@ -1012,9 +1069,9 @@ input[type="range"]::-moz-range-thumb {
 
 .pagination-btn:hover:not(:disabled),
 .page-number:hover {
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
-    border-color: var(--text);
+    border-color: var(--primary-dark);
 }
 
 .pagination-btn:disabled {
@@ -1023,16 +1080,16 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .page-number.active {
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
-    border-color: var(--text);
+    border-color: var(--primary-dark);
 }
 
 /* No Results */
 .no-results {
     text-align: center;
     padding: 3rem 1.5rem;
-    background: var(--white);
+    background: var(--bg);
     border-radius: 12px;
     box-shadow: var(--shadow-sm);
 }
@@ -1064,7 +1121,7 @@ input[type="range"]::-moz-range-thumb {
     width: 100%;
     max-width: 100%;
     height: 100vh;
-    background: var(--white);
+    background: var(--bg);
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1000;
@@ -1114,6 +1171,7 @@ input[type="range"]::-moz-range-thumb {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: var(--bg);
 }
 
 @media (min-width: 640px) {
@@ -1126,6 +1184,7 @@ input[type="range"]::-moz-range-thumb {
     font-size: 1.125rem;
     font-weight: 700;
     font-family: 'Inter', sans-serif;
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -1151,6 +1210,7 @@ input[type="range"]::-moz-range-thumb {
     flex: 1;
     overflow-y: auto;
     padding: 0.875rem;
+    background: var(--bg);
 }
 
 @media (min-width: 640px) {
@@ -1213,6 +1273,7 @@ input[type="range"]::-moz-range-thumb {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -1244,7 +1305,7 @@ input[type="range"]::-moz-range-thumb {
     width: 24px;
     height: 24px;
     border: 1px solid var(--border);
-    background: var(--white);
+    background: var(--bg);
     border-radius: 4px;
     cursor: pointer;
     display: flex;
@@ -1253,10 +1314,11 @@ input[type="range"]::-moz-range-thumb {
     font-size: 0.875rem;
     transition: var(--transition);
     flex-shrink: 0;
+    color: var(--text);
 }
 
 .quantity-btn:hover {
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
 }
 
@@ -1265,6 +1327,7 @@ input[type="range"]::-moz-range-thumb {
     text-align: center;
     font-weight: 600;
     font-size: 0.8125rem;
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -1293,6 +1356,7 @@ input[type="range"]::-moz-range-thumb {
 .cart-footer {
     padding: 1.25rem;
     border-top: 1px solid var(--border);
+    background: var(--bg);
 }
 
 @media (min-width: 640px) {
@@ -1308,6 +1372,7 @@ input[type="range"]::-moz-range-thumb {
     font-weight: 700;
     margin-bottom: 1rem;
     font-family: 'Inter', sans-serif;
+    color: var(--text);
 }
 
 @media (min-width: 640px) {
@@ -1319,7 +1384,7 @@ input[type="range"]::-moz-range-thumb {
 .checkout-btn {
     width: 100%;
     padding: 0.875rem 1rem;
-    background: var(--text);
+    background: var(--primary-dark);
     color: var(--white);
     border: none;
     border-radius: 8px;
@@ -1339,7 +1404,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .checkout-btn:hover {
-    background: var(--primary-dark);
+    background: var(--primary);
 }
 
 .empty-cart {
@@ -1366,13 +1431,17 @@ input[type="range"]::-moz-range-thumb {
     }
 }
 
+.empty-cart p {
+    color: var(--text-muted);
+}
+
 /* Toast Notifications - RESPONSIVE */
 .toast-notification {
     position: fixed;
     bottom: 1rem;
     right: 1rem;
     left: 1rem;
-    background: var(--text);
+    background: var(--primary-dark);
     color: white;
     padding: 0.875rem 1rem;
     border-radius: 8px;
@@ -1574,36 +1643,42 @@ input[type="range"]::-moz-range-thumb {
     </style>
 </head>
 <body>
-    
-  <!-- Navbar -->
+  <!-- CLEANER NAVBAR -->
   <header class="navbar">
     <div class="navbar-container">
-      <div class="navbar-brand">
+      <!-- Logo + Brand -->
+      <a href="index.html" class="navbar-brand">
         <img src="../assets/icon.png" alt="SP Gadgets" class="navbar-logo">
         <div class="navbar-text">
           <h1 class="navbar-title">SP Gadgets</h1>
           <p class="navbar-subtitle">Shinkomania Plug</p>
         </div>
-      </div>
+      </a>
 
+      <!-- Center Nav (Desktop Only) -->
       <nav class="navbar-nav" aria-label="Primary navigation">
         <a href="#home" class="nav-link">Home</a>
+        <a href="#about" class="nav-link">About</a>
+        <a href="pages/shop.php" class="nav-link">Shop</a>
         <a href="#products" class="nav-link">Products</a>
         <a href="#features" class="nav-link">Features</a>
         <a href="#contact" class="nav-link">Contact</a>
       </nav>
 
+      <!-- Right Actions (Minimal) -->
       <div class="navbar-actions">
-        <button class="cart-btn" id="cartBtn" aria-label="Shopping cart">
-          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-          </svg>
+        <!-- Theme Toggle Button (Add to your top-bar-right section) -->
+        <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+            <i class="fas fa-moon theme-icon" id="themeIcon"></i>
+        </button>
+        <!-- Cart Icon -->
+        <button class="icon-btn" aria-label="Shopping cart" id="cartBtn">
+          <i class="fas fa-shopping-cart"></i>
           <span class="cart-badge" id="cart-badge">0</span>
         </button>
 
-        <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+        <!-- Menu Toggle -->
+        <button class="menu-toggle" id="menu-toggle" aria-label="Menu" aria-expanded="false">
           <span class="hamburger"></span>
           <span class="hamburger"></span>
           <span class="hamburger"></span>
@@ -1611,6 +1686,73 @@ input[type="range"]::-moz-range-thumb {
       </div>
     </div>
   </header>
+
+  <!-- ENHANCED SIDEBAR with Search & User -->
+  <div class="mobile-overlay" id="mobile-overlay" aria-hidden="true">
+    <div class="mobile-overlay-content">
+      <div class="mobile-overlay-header">
+        <div class="navbar-brand">
+          <img src="../assets/icon.png" alt="SP Gadgets" class="navbar-logo">
+          <div class="navbar-text">
+            <h2 class="navbar-title">SP Gadgets</h2>
+          </div>
+        </div>
+        <button class="mobile-overlay-close" id="overlay-close" aria-label="Close menu">×</button>
+      </div>
+
+      <!-- Search in Sidebar -->
+      <div class="sidebar-search">
+        <input type="text" placeholder="Search products..." id="sidebarSearchInput" onkeypress="if(event.key==='Enter') performSearch()">
+      </div>
+
+      <!-- User Section -->
+      <div class="sidebar-user">
+        <div class="sidebar-user-icon">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="sidebar-user-name">Guest</div>
+        <div class="sidebar-user-buttons">
+          <a href="pages/login.php" class="sidebar-btn sidebar-btn-primary">Login</a>
+          <a href="pages/register.php" class="sidebar-btn sidebar-btn-outline">Sign Up</a>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="mobile-nav" aria-label="Mobile navigation">
+        <a href="#home" class="mobile-nav-link">
+          <i class="fas fa-home"></i>
+          <span>Home</span>
+        </a>
+        <a href="#about" class="mobile-nav-link">
+          <i class="fas fa-info-circle"></i>
+          <span>About Us</span>
+        </a>
+        <a href="pages/shop.php" class="mobile-nav-link">
+          <i class="fas fa-store"></i>
+          <span>Shop</span>
+        </a>
+        <a href="#products" class="mobile-nav-link">
+          <i class="fas fa-box-open"></i>
+          <span>Products</span>
+        </a>
+        <a href="#features" class="mobile-nav-link">
+          <i class="fas fa-star"></i>
+          <span>Features</span>
+        </a>
+        <a href="#contact" class="mobile-nav-link">
+          <i class="fas fa-phone"></i>
+          <span>Contact</span>
+        </a>
+      </nav>
+
+      <!-- Shop Button -->
+      <div class="mobile-cta">
+        <a href="pages/shop.php" class="shop-btn">
+          <i class="fas fa-shopping-bag"></i> Shop Now
+        </a>
+      </div>
+    </div>
+  </div>
 
   <!-- Cart Sidebar -->
   <div class="cart-overlay" id="cartOverlay"></div>
@@ -1646,14 +1788,17 @@ input[type="range"]::-moz-range-thumb {
           <div class="filter-section">
             <details open>
               <summary>Category</summary>
-              <div class="checkbox-group" id="categoryFilters">
-                <?php foreach($uniqueCategories as $category): ?>
-                <label class="checkbox-item">
-                  <input type="checkbox" value="<?php echo htmlspecialchars($category); ?>" data-filter="category">
-                  <span><?php echo htmlspecialchars(ucfirst($category)); ?></span>
-                </label>
-                <?php endforeach; ?>
-              </div>
+                <div class="checkbox-group" id="categoryFilters">
+                    <?php foreach($uniqueCategories as $category): ?>
+                    <label class="checkbox-item">
+                        <input type="checkbox" 
+                            value="<?php echo htmlspecialchars($category); ?>" 
+                            data-filter="category"
+                            <?php echo ($urlFilters['category'] === $category) ? 'checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars(ucfirst($category)); ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
             </details>
           </div>
 
@@ -1662,16 +1807,25 @@ input[type="range"]::-moz-range-thumb {
               <summary>Condition</summary>
               <div class="checkbox-group">
                 <label class="checkbox-item">
-                  <input type="checkbox" value="new" data-filter="condition">
-                  <span>New</span>
+                    <input type="checkbox" 
+                        value="new" 
+                        data-filter="condition"
+                        <?php echo ($urlFilters['condition'] === 'new') ? 'checked' : ''; ?>>
+                    <span>New</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" value="refurbished" data-filter="condition">
-                  <span>Refurbished</span>
+                    <input type="checkbox" 
+                        value="refurbished" 
+                        data-filter="condition"
+                        <?php echo ($urlFilters['condition'] === 'refurbished') ? 'checked' : ''; ?>>
+                    <span>Refurbished</span>
                 </label>
                 <label class="checkbox-item">
-                  <input type="checkbox" value="used" data-filter="condition">
-                  <span>Used</span>
+                    <input type="checkbox" 
+                        value="used" 
+                        data-filter="condition"
+                        <?php echo ($urlFilters['condition'] === 'used') ? 'checked' : ''; ?>>
+                    <span>Used</span>
                 </label>
               </div>
             </details>
@@ -1680,14 +1834,17 @@ input[type="range"]::-moz-range-thumb {
           <div class="filter-section">
             <details open>
               <summary>Brand</summary>
-              <div class="checkbox-group" id="brandFilters">
-                <?php foreach($uniqueBrands as $brand): ?>
-                <label class="checkbox-item">
-                  <input type="checkbox" value="<?php echo htmlspecialchars($brand); ?>" data-filter="brand">
-                  <span><?php echo htmlspecialchars($brand); ?></span>
-                </label>
-                <?php endforeach; ?>
-              </div>
+                <div class="checkbox-group" id="brandFilters">
+                    <?php foreach($uniqueBrands as $brand): ?>
+                    <label class="checkbox-item">
+                        <input type="checkbox" 
+                            value="<?php echo htmlspecialchars($brand); ?>" 
+                            data-filter="brand"
+                            <?php echo ($urlFilters['brand'] === $brand) ? 'checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars($brand); ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
             </details>
           </div>
 
@@ -1720,15 +1877,15 @@ input[type="range"]::-moz-range-thumb {
             <div class="loader"></div>
           </div>
 
-          <input type="text" id="searchBar" placeholder="Search by product name or brand..." class="search-input">
+          <input type="text" id="searchBar" placeholder="Search by product name or brand..." class="search-input" value="<?php echo htmlspecialchars($urlFilters['search']); ?>">
           
           <div class="results-header">
             <div class="results-count" id="resultsCount">Showing <?php echo count($initialProducts); ?> products</div>
             <select class="sort-select" id="sortSelect">
-              <option value="featured">Featured</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="name">Name: A to Z</option>
+                <option value="featured" <?php echo ($urlFilters['sort'] === 'featured') ? 'selected' : ''; ?>>Featured</option>
+                <option value="price-low" <?php echo ($urlFilters['sort'] === 'price-low') ? 'selected' : ''; ?>>Price: Low to High</option>
+                <option value="price-high" <?php echo ($urlFilters['sort'] === 'price-high') ? 'selected' : ''; ?>>Price: High to Low</option>
+                <option value="name" <?php echo ($urlFilters['sort'] === 'name') ? 'selected' : ''; ?>>Name: A to Z</option>
             </select>
           </div>
 
@@ -1775,20 +1932,18 @@ input[type="range"]::-moz-range-thumb {
   </main>
   
   <script>
-    // Pass initial data to JavaScript
+    // Pass initial data to JavaScript INCLUDING URL FILTERS
     window.shopInitialData = {
         products: <?php echo json_encode($initialProducts); ?>,
         priceRange: {
             min: <?php echo $minPrice; ?>,
             max: <?php echo $maxPrice; ?>
         },
-        totalProducts: <?php echo $totalProducts; ?>
+        totalProducts: <?php echo $totalProducts; ?>,
+        urlFilters: <?php echo json_encode($urlFilters); ?>
     };
-
-    // assets/js/shop.js - Optimized Shop with Initial Server-Side Render
-
 // ========================================
-// STATE MANAGEMENT
+// STATE MANAGEMENT WITH URL FILTERS
 // ========================================
 const shopState = {
     currentPage: 1,
@@ -1800,13 +1955,88 @@ const shopState = {
         minPrice: 0,
         maxPrice: 999999999,
     },
-    originalPriceRange: { min: 0, max: 999999999 }, // Store original values
+    originalPriceRange: { min: 0, max: 999999999 },
     searchQuery: '',
     sortBy: 'featured',
     totalPages: 1,
     totalResults: 0,
-    isFiltered: false // Track if any filters are active
+    isFiltered: false
 };
+
+// ========================================
+// INITIALIZATION WITH URL FILTERS
+// ========================================
+document.addEventListener('DOMContentLoaded', () => {
+    initializeShop();
+});
+
+function initializeShop() {
+    // Get initial data from window object (passed from PHP)
+    if (window.shopInitialData) {
+        shopState.originalPriceRange = {
+            min: window.shopInitialData.priceRange.min,
+            max: window.shopInitialData.priceRange.max
+        };
+        shopState.filters.minPrice = window.shopInitialData.priceRange.min;
+        shopState.filters.maxPrice = window.shopInitialData.priceRange.max;
+        shopState.totalResults = window.shopInitialData.totalProducts;
+        shopState.totalPages = Math.ceil(window.shopInitialData.totalProducts / shopState.productsPerPage);
+        
+        // ===== APPLY URL FILTERS =====
+        const urlFilters = window.shopInitialData.urlFilters;
+        
+        if (urlFilters.category) {
+            shopState.filters.categories = [urlFilters.category];
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.brand) {
+            shopState.filters.brands = [urlFilters.brand];
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.condition) {
+            shopState.filters.conditions = [urlFilters.condition];
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.search) {
+            shopState.searchQuery = urlFilters.search;
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.min_price > 0) {
+            shopState.filters.minPrice = urlFilters.min_price;
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.max_price > 0) {
+            shopState.filters.maxPrice = urlFilters.max_price;
+            shopState.isFiltered = true;
+        }
+        
+        if (urlFilters.sort && urlFilters.sort !== 'featured') {
+            shopState.sortBy = urlFilters.sort;
+            shopState.isFiltered = true;
+        }
+    }
+    
+    // Initialize UI
+    initializePriceSlider();
+    initializeEventListeners();
+    initializeCart();
+    
+    // Attach listeners to initial products (server-rendered)
+    attachAddToCartListeners();
+    
+    // If filters from URL exist, fetch filtered products immediately
+    if (shopState.isFiltered) {
+        fetchProducts();
+    } else {
+        // Render initial pagination for unfiltered state
+        renderPagination();
+    }
+}
 
 // ========================================
 // CART MANAGEMENT (LocalStorage)
@@ -1827,12 +2057,12 @@ const CartManager = {
         const existingItem = cart.find(item => item.id === productId);
         
         if (existingItem) {
-        if (existingItem.quantity < productData.stock_quantity) {
-            existingItem.quantity++;
-        } else {
-            showToast('Cannot add more items. Stock limit reached!', 'warning');
-            return false;
-        }
+            if (existingItem.quantity < productData.stock_quantity) {
+                existingItem.quantity++;
+            } else {
+                showToast('Cannot add more items. Stock limit reached!', 'warning');
+                return false;
+            }
         } else {
             cart.push({
                 id: productId,
@@ -1900,38 +2130,6 @@ const CartManager = {
         this.updateCartCount();
     }
 };
-
-// ========================================
-// INITIALIZATION
-// ========================================
-document.addEventListener('DOMContentLoaded', () => {
-    initializeShop();
-});
-
-function initializeShop() {
-    // Get initial data from window object (passed from PHP)
-    if (window.shopInitialData) {
-        shopState.originalPriceRange = {
-            min: window.shopInitialData.priceRange.min,
-            max: window.shopInitialData.priceRange.max
-        };
-        shopState.filters.minPrice = window.shopInitialData.priceRange.min;
-        shopState.filters.maxPrice = window.shopInitialData.priceRange.max;
-        shopState.totalResults = window.shopInitialData.totalProducts;
-        shopState.totalPages = Math.ceil(window.shopInitialData.totalProducts / shopState.productsPerPage);
-    }
-    
-    // Initialize UI
-    initializePriceSlider();
-    initializeEventListeners();
-    initializeCart();
-    
-    // Attach listeners to initial products (server-rendered)
-    attachAddToCartListeners();
-    
-    // Render initial pagination
-    renderPagination();
-}
 
 // ========================================
 // EVENT LISTENERS
@@ -2108,8 +2306,8 @@ function handleCheckout() {
     const cart = CartManager.getCart();
     
     if (cart.length === 0) {
-    showToast('Your cart is empty!', 'info');
-    return;
+        showToast('Your cart is empty!', 'info');
+        return;
     }
     
     localStorage.setItem('checkout_cart', JSON.stringify(cart));
@@ -2220,43 +2418,14 @@ function handleSortChange(e) {
 }
 
 function clearAllFilters() {
-    shopState.filters = {
-        categories: [],
-        brands: [],
-        conditions: [],
-        minPrice: shopState.originalPriceRange.min,
-        maxPrice: shopState.originalPriceRange.max,
-    };
-    shopState.searchQuery = '';
-    shopState.currentPage = 1;
-    shopState.sortBy = 'featured';
-    shopState.isFiltered = false;
-    
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-filter]');
-    checkboxes.forEach(checkbox => checkbox.checked = false);
-    
-    const searchBar = document.getElementById('searchBar');
-    if (searchBar) searchBar.value = '';
-    
-    const minSlider = document.getElementById('minPriceSlider');
-    const maxSlider = document.getElementById('maxPriceSlider');
-    const sortSelect = document.getElementById('sortSelect');
-    
-    if (minSlider) minSlider.value = shopState.originalPriceRange.min;
-    if (maxSlider) maxSlider.value = shopState.originalPriceRange.max;
-    if (sortSelect) sortSelect.value = 'featured';
-    
-    updatePriceSliderVisual();
-    
-    // Reload page to show initial products
-    window.location.reload();
+    // Redirect to clean URL without parameters
+    window.location.href = window.location.pathname;
 }
 
 // ========================================
-// FETCH PRODUCTS FROM API (Only when filtered)
+// FETCH PRODUCTS FROM API
 // ========================================
 async function fetchProducts() {
-    // Don't fetch if no filters are active
     if (!shopState.isFiltered) {
         return;
     }
@@ -2280,7 +2449,6 @@ async function fetchProducts() {
             params.append('conditions', shopState.filters.conditions.join(','));
         }
         
-        // Only add price params if they differ from original range
         if (shopState.filters.minPrice !== shopState.originalPriceRange.min) {
             params.append('minPrice', shopState.filters.minPrice);
         }
@@ -2370,26 +2538,26 @@ function renderProductCard(product) {
     const imagePath = product.image;
     
     card.innerHTML = `
-    <div class="product-image-wrapper" onclick="viewProduct(${product.id})">
-        <a href="product-details.php?id=${product.id}" class="p-d">View</a>
-        <img src="${imagePath}" alt="${escapeHtml(product.name)}" class="product-image" onerror="this.src='../assets/products/placeholder.jpg'">
-        <span class="product-condition ${conditionClass}">${escapeHtml(product.item_condition)}</span>
-        ${isOutOfStock ? '<span class="out-of-stock-badge">OUT OF STOCK</span>' : ''}
-    </div>
-    <div class="product-details" onclick="viewProduct(${product.id})">
-        <div class="product-category">${escapeHtml(product.category)}</div>
-        <h3 class="product-name">${escapeHtml(product.name)}</h3>
-        <div class="product-brand">${escapeHtml(product.brand)}</div>
-        <div class="product-price">₦${formatPrice(product.price)}</div>
-        <button class="add-to-cart-btn" 
-                data-product-id="${product.id}" 
-                data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' 
-                onclick="event.stopPropagation()"
-                ${isOutOfStock ? 'disabled' : ''}>
-            ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-        </button>
-    </div>
-`;
+        <div class="product-image-wrapper" onclick="viewProduct(${product.id})">
+            <a href="product-details.php?id=${product.id}" class="p-d">View</a>
+            <img src="${imagePath}" alt="${escapeHtml(product.name)}" class="product-image" onerror="this.src='../assets/products/placeholder.jpg'">
+            <span class="product-condition ${conditionClass}">${escapeHtml(product.item_condition)}</span>
+            ${isOutOfStock ? '<span class="out-of-stock-badge">OUT OF STOCK</span>' : ''}
+        </div>
+        <div class="product-details" onclick="viewProduct(${product.id})">
+            <div class="product-category">${escapeHtml(product.category)}</div>
+            <h3 class="product-name">${escapeHtml(product.name)}</h3>
+            <div class="product-brand">${escapeHtml(product.brand)}</div>
+            <div class="product-price">₦${formatPrice(product.price)}</div>
+            <button class="add-to-cart-btn" 
+                    data-product-id="${product.id}" 
+                    data-product='${JSON.stringify(product).replace(/'/g, "&apos;")}' 
+                    onclick="event.stopPropagation()"
+                    ${isOutOfStock ? 'disabled' : ''}>
+                ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+        </div>
+    `;
     
     return card;
 }
@@ -2411,11 +2579,9 @@ function attachAddToCartListeners() {
     const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
     
     addToCartButtons.forEach(button => {
-        // Remove existing listeners to avoid duplicates
         button.replaceWith(button.cloneNode(true));
     });
     
-    // Re-query after cloning
     const newButtons = document.querySelectorAll('.add-to-cart-btn');
     newButtons.forEach(button => {
         button.addEventListener('click', async (e) => {
@@ -2558,19 +2724,15 @@ function scrollToTop() {
     });
 }
 
-// Toast Notification System
 function showToast(message, type = 'info') {
-    // Remove any existing toasts
     const existingToast = document.querySelector('.toast-notification');
     if (existingToast) {
         existingToast.remove();
     }
     
-    // Create toast element
     const toast = document.createElement('div');
     toast.className = `toast-notification ${type}`;
     
-    // Choose icon based on type
     let icon = 'ℹ️';
     if (type === 'success') icon = '✓';
     if (type === 'error') icon = '✗';
@@ -2584,7 +2746,6 @@ function showToast(message, type = 'info') {
     
     document.body.appendChild(toast);
     
-    // Auto-remove after 3 seconds
     setTimeout(() => {
         if (toast.parentElement) {
             toast.classList.add('hiding');
@@ -2593,10 +2754,40 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Navigate to product details page
 function viewProduct(productId) {
     window.location.href = `product-details.php?id=${productId}`;
 }
+
+// Theme Toggle Functionality
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('admin-theme', newTheme);
+    
+    updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+    const icon = document.getElementById('themeIcon');
+    if (theme === 'dark') {
+        icon.className = 'fas fa-moon theme-icon';
+    } else {
+        icon.className = 'fas fa-sun theme-icon';
+    }
+}
+
+// Load saved theme on page load
+function loadTheme() {
+    const savedTheme = localStorage.getItem('admin-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+// Initialize theme when page loads
+loadTheme();
   </script>
 
   <script src="../scripts/main.js"></script>

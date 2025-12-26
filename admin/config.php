@@ -18,14 +18,14 @@ function isAdminLoggedIn() {
 // Require admin login (redirect to login if not authenticated)
 function requireAdminLogin() {
     if (!isAdminLoggedIn()) {
-        header('Location: /sp-gadgets/admin/login.php');
+        header('Location: /sp_gadgets_main/admin/login.php');
         exit;
     }
     
     // Check session timeout
     if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > ADMIN_SESSION_TIMEOUT)) {
         adminLogout();
-        header('Location: /sp-gadgets/admin/login.php?timeout=1');
+        header('Location: /sp_gadgets_main/admin/login.php?timeout=1');
         exit;
     }
     
